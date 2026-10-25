@@ -29,7 +29,7 @@ Free-tier friendly: with an OpenRouter `:free` model, a budget guard reserves qu
 ## Setup
 
 1. **Python deps:** `pip install -r requirements.txt`
-2. **Keys:** copy `.env.example` to `.env` and fill in `APIFY_TOKEN` and `OPENROUTER_API_KEY` (optionally `OPENROUTER_MODEL`, e.g. a `:free` model).
+2. **Keys:** copy `.env.example` to `.env` and fill in your own keys. No keys are included in this repo; `.env.example` explains where to create each one (Apify, OpenRouter, Google, Modal, and optionally Telegram).
 3. **Your resume:** replace `resume/base_resume.md` (a sample for "Jane Doe") with your own, keeping the same Markdown structure, and fill in `resume/application_profile.json`.
 4. **Resume file name:** set `RESUME_TITLE`, e.g. `RESUME_TITLE="Your Name | Resume"`.
 5. **Google:** install the Google Workspace CLI (`npm install -g @googleworkspace/cli`), create a Desktop OAuth client in your own Google Cloud project, save it as `~/.config/gws/client_secret.json`, then run `gws auth login -s drive,docs,sheets`.
