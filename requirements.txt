@@ -1,0 +1,4 @@
+apify-client>=3.3
+python-dotenv>=1.0
+requests>=2.31
+python-docx>=1.1
