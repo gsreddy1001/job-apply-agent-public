@@ -2,8 +2,6 @@
 
 Sources (each normalized to the same job shape, tagged with "source"); the actor IDs come
 from APIFY_ACTOR_* in .env, these are the actors the code was written for:
-  linkedin   curious_coder/linkedin-jobs-scraper   (LinkedIn search URL with remote/hybrid,
-                                                    full-time, last-3-days filters)
   indeed     valig/indeed-jobs-scraper
   dice       shahidirfan/Dice-Job-Scraper          (tech-focused board)
   glassdoor  bebity/glassdoor-jobs-scraper
@@ -14,7 +12,7 @@ Pipeline inside this step, all before any LLM call:
   merge -> de-duplicate (link, then title+company) -> free title/job-type filter ->
   drop jobs already scored on earlier days (state/seen_jobs.json) -> cap at --max-jobs,
   filling slots by priority: company career sites, then Indeed jobs that apply on the
-  employer's own site, then Dice/Glassdoor/other Indeed, and LinkedIn last.
+  employer's own site, then Dice/Glassdoor/other Indeed.
 
 Usage:
     python scripts/scrape_jobs.py                          # all sources, defaults below
@@ -29,7 +27,6 @@ import re
 from decimal import Decimal
 from itertools import zip_longest
 from pathlib import Path
-from urllib.parse import urlencode, urlsplit, urlunsplit
 
 from apify_client import ApifyClient
 from dotenv import load_dotenv
@@ -44,7 +41,6 @@ LOG_FILE = ROOT / "output" / "scrape_log.json"
 # Technology PM titles that match the base resume (PMP, Agile, cloud, IT delivery).
 TITLES = ["Technical Project Manager", "IT Project Manager", "Technical Program Manager",
           "Digital Project Manager", "IT Program Manager"]
-LINKEDIN_KEYWORDS = " OR ".join(f'"{t}"' for t in TITLES[:4])
 # Search window: last 3 days (configurable), so each run sees more postings;
 # state/seen_jobs.json stops the overlap between days from being scored twice.
 LOOKBACK_DAYS = 3
@@ -86,24 +82,6 @@ def _text(value) -> str:
     if isinstance(value, list):
         return ", ".join(str(v) for v in value if v)
     return value or ""
-
-
-def linkedin_input(limit: int) -> dict:
-    url = "https://www.linkedin.com/jobs/search/?" + urlencode({
-        "keywords": LINKEDIN_KEYWORDS, "location": "United States",
-        "f_WT": "2,3", "f_JT": "F", "f_TPR": f"r{LOOKBACK_DAYS * 86400}"})
-    return {"urls": [url], "limitPerSource": limit, "scrapeCompany": False}
-
-
-def linkedin_job(i: dict) -> dict:
-    link = i.get("link") or ""
-    if "linkedin.com/jobs/view/" in link:  # Drop per-search tracking params.
-        link = urlunsplit(urlsplit(link)._replace(query=""))
-    return {"title": i.get("title"), "company": i.get("companyName"), "link": link,
-            "apply_link": i.get("applyUrl") or link,  # Empty applyUrl = LinkedIn Easy Apply.
-            "description": i.get("descriptionText"), "posted_date": i.get("postedAt"),
-            "workplace_type": None, "employment_type": i.get("employmentType"),
-            "seniority_level": i.get("seniorityLevel"), "location": _text(i.get("location"))}
 
 
 def indeed_input(limit: int) -> dict:
@@ -180,7 +158,6 @@ def career_job(i: dict) -> dict:
 # Find an actor on https://apify.com/store, open it, and copy the ID shown under
 # "API" (or use "username/actor-name"). The input builders and normalizers below were
 # written for these actors; another actor may need its own input/field mapping:
-#   APIFY_ACTOR_LINKEDIN   curious_coder/linkedin-jobs-scraper
 #   APIFY_ACTOR_INDEED     valig/indeed-jobs-scraper
 #   APIFY_ACTOR_DICE       shahidirfan/Dice-Job-Scraper
 #   APIFY_ACTOR_GLASSDOOR  bebity/glassdoor-jobs-scraper
@@ -188,7 +165,6 @@ def career_job(i: dict) -> dict:
 # Sources whose variable is empty are skipped.
 # name: (env var with the actor ID, input builder, normalizer, default daily limit)
 SOURCES = {
-    "linkedin": ("APIFY_ACTOR_LINKEDIN", linkedin_input, linkedin_job, 5),   # Lowest priority.
     "indeed": ("APIFY_ACTOR_INDEED", indeed_input, indeed_job, 25),          # Many link to employer ATS.
     "dice": ("APIFY_ACTOR_DICE", dice_input, dice_job, 10),
     "glassdoor": ("APIFY_ACTOR_GLASSDOOR", glassdoor_input, glassdoor_job, 10),
@@ -245,15 +221,12 @@ def hard_reject(job: dict) -> str | None:
 
 
 def priority(job: dict) -> int:
-    """Lower is better. Company career-site postings are almost always real roles, while
-    LinkedIn is full of reposted/ghost listings, so the daily scoring slots go to company
-    portals first (configurable)."""
+    """Lower is better. Company career-site postings are almost always real, current roles,
+    so the daily scoring slots go to company portals first (configurable)."""
     if job["source"] == "career":
         return 0
     if job["source"] == "indeed" and "indeed.com" not in (job.get("apply_link") or "indeed.com"):
         return 1  # Indeed listing that applies on the employer's own ATS page.
-    if job["source"] == "linkedin":
-        return 3
     return 2
 
 

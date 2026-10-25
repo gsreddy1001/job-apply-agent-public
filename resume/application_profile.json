@@ -14,7 +14,7 @@
     ["Years of project management experience", "<e.g. 8+ years>"],
     ["Highest education", "<Degree, School (Year)>"],
     ["Certifications", "<e.g. PMP; CSM>"],
-    ["How did you hear about this position?", "Use the Source column for the job (LinkedIn, Indeed, Dice, Glassdoor, or the company careers site)"],
+    ["How did you hear about this position?", "Use the Source column for the job (Indeed, Dice, Glassdoor, or the company careers site)"],
     ["Gender / race / veteran / disability (EEO, voluntary)", "Your personal choice to answer; 'Decline to self-identify' is always an option"]
   ]
 }

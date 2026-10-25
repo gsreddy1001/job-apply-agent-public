@@ -25,7 +25,7 @@ End to end, one run should:
 ## 3. Pipeline Steps
 
 ### 3.1 Scrape
-- Source: Apify (free tier), an actor that covers LinkedIn job search.
+- Source: Apify (free tier) job-board and company career-site actors.
 - Niche: Project Manager, remote or hybrid, full-time.
 - Output: list of `{title, company, link, description, posted_date}`.
 

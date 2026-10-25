@@ -2,7 +2,7 @@
 
 A daily, unattended job-search pipeline for Project Manager roles. Every morning it:
 
-1. **Scrapes** fresh postings from five Apify actors (company career sites, Indeed, Dice, Glassdoor, LinkedIn), giving company career portals priority over job boards.
+1. **Scrapes** fresh postings from four Apify actors (company career sites, Indeed, Dice, Glassdoor), giving company career portals priority over job boards.
 2. **Filters** before any AI call: de-duplicates across sources, drops irrelevant titles, contract/part-time roles, stale reposts, and (optionally) postings that require a security clearance or offer no visa sponsorship.
 3. **Scores** each job 1–10 against your resume with one LLM call (OpenRouter), returning matched and missing requirements. The final score is computed in code from a base score plus boosts, capped by dealbreakers.
 4. **Tailors** an ATS-friendly resume for every job scoring 7 or higher. It only reorders and rewords what is already in your base resume, and a validator rejects any invented employers, metrics, certifications, or inflated wording.

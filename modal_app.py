@@ -1,6 +1,6 @@
 """Daily Job Application Agent run on Modal.
 
-Every day at 5:00 AM America/Los_Angeles (Pacific): scrape (LinkedIn, Indeed, Dice, Glassdoor,
+Every day at 5:00 AM America/Los_Angeles (Pacific): scrape (Indeed, Dice, Glassdoor,
 company career sites) -> score -> tailor -> Google Doc + PDF
 (in Drive) -> tracker Sheet. Any failure sends a Telegram alert titled
 "JOB-APPLY-AGENT — WHAT BROKE" and then re-raises, so Modal also marks the run failed.
