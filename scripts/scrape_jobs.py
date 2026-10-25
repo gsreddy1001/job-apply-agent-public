@@ -1,6 +1,7 @@
 """Scrape fresh technology Project Manager postings from several Apify job sources.
 
-Sources (each normalized to the same job shape, tagged with "source"):
+Sources (each normalized to the same job shape, tagged with "source"); the actor IDs come
+from APIFY_ACTOR_* in .env, these are the actors the code was written for:
   linkedin   curious_coder/linkedin-jobs-scraper   (LinkedIn search URL with remote/hybrid,
                                                     full-time, last-3-days filters)
   indeed     valig/indeed-jobs-scraper
@@ -175,20 +176,37 @@ def career_job(i: dict) -> dict:
 
 
 # name: (actor id, input builder, normalizer, default daily limit)
+# Each source is an Apify Store actor. Its ID is NOT hardcoded: set it in .env (see .env.example).
+# Find an actor on https://apify.com/store, open it, and copy the ID shown under
+# "API" (or use "username/actor-name"). The input builders and normalizers below were
+# written for these actors; another actor may need its own input/field mapping:
+#   APIFY_ACTOR_LINKEDIN   curious_coder/linkedin-jobs-scraper
+#   APIFY_ACTOR_INDEED     valig/indeed-jobs-scraper
+#   APIFY_ACTOR_DICE       shahidirfan/Dice-Job-Scraper
+#   APIFY_ACTOR_GLASSDOOR  bebity/glassdoor-jobs-scraper
+#   APIFY_ACTOR_CAREER     fantastic-jobs/career-site-job-listing-api
+# Sources whose variable is empty are skipped.
+# name: (env var with the actor ID, input builder, normalizer, default daily limit)
 SOURCES = {
-    "linkedin": ("hKByXkMQaC5Qt9UMN", linkedin_input, linkedin_job, 5),   # Lowest priority.
-    "indeed": ("TrtlecxAsNRbKl1na", indeed_input, indeed_job, 25),      # Many link to employer ATS.
-    "dice": ("LKwIpkqxqvspgorPE", dice_input, dice_job, 10),
-    "glassdoor": ("t2FNNV3J6mvckgV2g", glassdoor_input, glassdoor_job, 10),
-    "career": ("s3dtSTZSZWFtAVLn5", career_input, career_job, 10),
+    "linkedin": ("APIFY_ACTOR_LINKEDIN", linkedin_input, linkedin_job, 5),   # Lowest priority.
+    "indeed": ("APIFY_ACTOR_INDEED", indeed_input, indeed_job, 25),          # Many link to employer ATS.
+    "dice": ("APIFY_ACTOR_DICE", dice_input, dice_job, 10),
+    "glassdoor": ("APIFY_ACTOR_GLASSDOOR", glassdoor_input, glassdoor_job, 10),
+    "career": ("APIFY_ACTOR_CAREER", career_input, career_job, 10),
 }
+
+
+def actor_id(name: str) -> str | None:
+    return (os.environ.get(SOURCES[name][0]) or "").strip() or None
 
 
 # ---------- pipeline ----------
 
 def run_source(client: ApifyClient, name: str, limit: int, max_charge_usd: float) -> list[dict]:
-    actor_id, build_input, normalize, _ = SOURCES[name]
-    run = client.actor(actor_id).call(run_input=build_input(limit),
+    env_var, build_input, normalize, _ = SOURCES[name]
+    if not actor_id(name):
+        raise RuntimeError(f"{env_var} is not set in .env")
+    run = client.actor(actor_id(name)).call(run_input=build_input(limit),
                                       max_total_charge_usd=Decimal(str(max_charge_usd)))
     if run is None or str(run.status).split(".")[-1].upper() != "SUCCEEDED":
         raise RuntimeError(f"Apify run did not succeed: {getattr(run, 'status', None)}")
@@ -335,7 +353,10 @@ def main() -> None:
                         help="Hard spend cap for each Apify run")
     args = parser.parse_args()
 
-    sources = list(SOURCES) if args.sources == "all" else [s.strip() for s in args.sources.split(",")]
+    sources = ([s for s in SOURCES if actor_id(s)] if args.sources == "all"
+               else [s.strip() for s in args.sources.split(",")])
+    if not sources:
+        parser.error("No job sources configured: set at least one APIFY_ACTOR_* in .env")
     unknown = [s for s in sources if s not in SOURCES]
     if unknown:
         parser.error(f"Unknown sources: {', '.join(unknown)}")
