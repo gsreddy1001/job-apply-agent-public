@@ -58,3 +58,7 @@ python -m modal deploy modal_app.py          # daily schedule (5:00 AM America/L
 
 - Never commit `.env`, `output/`, or `state/`; they're already in `.gitignore`.
 - Respect each job board's terms of service. This project only reads public postings and leaves applying to you.
+
+## License
+
+Released under the [MIT License](LICENSE).
